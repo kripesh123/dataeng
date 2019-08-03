@@ -3,6 +3,7 @@ package com.kripesh.utils;
 import java.time.format.DateTimeFormatter;
 
 /**
+ * Dictionary of constant values;
  * @author kripesh
  */
 public class Dictionary {
@@ -20,7 +21,10 @@ public class Dictionary {
     public static final String A_Z = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     public static final String a_z = "abcdefghijklmnopqrstuvxyz";
     public static final String NUMBER = "0123456789";
-    public static final int THOUSAND = 1000;
+    public static final String GENERATE_DATA_SET = "locations,3,sensors,5,devices,4";
+    public static final String UPDATE_DATA_SET = "locations,1,sensors,2,devices,2";
+    public static final double THOUSAND = 1000;
+    public static final double FILE_SIZE = 1;
 
 
 }

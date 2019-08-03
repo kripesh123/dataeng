@@ -13,12 +13,21 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * In this class we add all the common methods
+ * @author kripesh
+ */
 public abstract class MasterDataSet {
 
-    public abstract void dataGenerator(String fileLocation, int fileSize, String fileMetadata) throws IOException;
+    public abstract void dataGenerator(String fileLocation, double fileSize, String fileMetadata) throws IOException;
 
-    protected Path createFolder(String fileLocation) {
-        if (null == fileLocation) {
+    /**
+     * Create folder if doest exist
+     * @param fileLocation File Location
+     * @return path of the folder created
+     */
+    Path createFolder(String fileLocation) {
+        if (null == fileLocation || fileLocation.isEmpty()) {
             return null;
         }
         Path dirPath = Paths.get(fileLocation);
@@ -37,24 +46,38 @@ public abstract class MasterDataSet {
         return null;
     }
 
-    protected void createFiles(int fileSize, Path path, int folderSize){
-       String filename = convertToFileNameData(LocalDateTime.now())+Dictionary.FILE_EXTENSION;
-        try(BufferedWriter bf = Files.newBufferedWriter(Paths.get(path + Dictionary.BACK_SLASH + filename), StandardCharsets.UTF_8)){
-            String content = generateContent(fileSize);
-            bf.write(content);
-            System.out.println("Written file: " + path.toString() + ": " + filename);
-        }catch (IOException ex){
-            ex.printStackTrace();
+    /**
+     * Create files in the given path with the fixed file size. Size of the total files should be equal to folderSize.
+     * @param fileSize File Size
+     * @param path Path of directory
+     * @param folderSize Folder size
+     */
+    void createFiles(double fileSize, Path path, double folderSize){
+        double size = convertMbToByte(fileSize);
+        while(isFolderSizeAvailable( path, folderSize)){
+            String filename = convertToFileNameData(LocalDateTime.now())+Dictionary.FILE_EXTENSION;
+            try(BufferedWriter bf = Files.newBufferedWriter(Paths.get(path + Dictionary.BACK_SLASH + filename), StandardCharsets.UTF_8)){
+                double availableSize = folderSize - getFolderSize(path);
+                double newFileSize = Math.min(availableSize, size);
+                String content = generateContent(newFileSize);
+                bf.write(content);
+                System.out.println("Written file: " + path.toString() + ": " + filename);
+            }catch (IOException ex){
+                ex.printStackTrace();
+            }
         }
-
     }
 
-    private String generateContent(int size){
-        final int fSize = (size * Dictionary.THOUSAND * Dictionary.THOUSAND) ;
+    /**
+     * This method is used for generating the File content
+     * @param size Size of content
+     * @return generate string
+     */
+    String generateContent(double size){
         // chose a Character random from this String
         String AlphaNumericString = Dictionary.A_Z + Dictionary.NUMBER + Dictionary.a_z;
         StringBuilder sb = new StringBuilder();
-        while((sb.toString().length()-1 < fSize)) {
+        while(isFileSizeAvailable(sb.toString().length(), size)) {
             for (int i = 0; i < 100; i++) {
                 // generate a random number between
                 // 0 to AlphaNumericString variable length
@@ -70,36 +93,95 @@ public abstract class MasterDataSet {
         return sb.toString();
     }
 
-    protected Map<String, Integer> parseFileMetadata(String fileMetadata){
-        String[] fileMdata = fileMetadata.split(Dictionary.COMMA);
-        Map<String, Integer> folderMapValue = new HashMap<>();
+    /**
+     * This method is used to convert mb to byte
+     * @param size mb to convert
+     * @return bytes
+     */
+    private double convertMbToByte(double size) {
+        return (size * Dictionary.THOUSAND * Dictionary.THOUSAND);
+    }
 
-        for (int i = 0; i < fileMdata.length - 1; i++){
+    /**
+     * This method is used to parse file metadata in string to map key value pairs.
+     * Key is name of the folder and value is the size of that particular folder
+     * If the file metadata size is less than file size, ignore the entry.
+     * @param fileMetadata File meta data
+     * @param size file Size
+     * @return folder map value
+     */
+    Map<String, Double> parseFileMetadata(String fileMetadata, double size){
+        String[] stringData = fileMetadata.split(Dictionary.COMMA);
+        Map<String, Double> folderMapValue = new HashMap<>();
+        for (int i = 0; i < stringData.length - 1; i++){
             if (fileMetadata.length()-1 == i){
                 break;
             }
-            String folderName = fileMdata[i];
-            int fSize = Integer.parseInt(fileMdata[++i]);
-            folderMapValue.put(folderName, fSize);
+            String folderName = stringData[i];
+            double folderSize = Double.parseDouble(stringData[++i]);
+            if (size <= folderSize){
+                folderMapValue.put(folderName, convertMbToByte(folderSize));
+            }
         }
         return folderMapValue;
     }
 
-    protected void createSubFolderAndContent(Map<String, Integer> fileMetadata, Path path, int fileSize){
-        fileMetadata.keySet()
-                .forEach(key -> {
-                    Path newPath = createFolder(path+Dictionary.BACK_SLASH+key);
-                    createFiles(fileSize,newPath, fileMetadata.get(key));
-                });
-    }
-
-
-    protected long getFileSize(File file) {
+    /**
+     * Get the size of the file
+     * @param file File
+     * @return size of a file
+     */
+    double getFileSize(File file) {
         return file.length();
     }
 
-    private String convertToFileNameData(LocalDateTime localDateTime) {
+    /**
+     * Convert local date time to local date time formatter
+     * @param localDateTime Local date time
+     * @return data time formatter
+     */
+    String convertToFileNameData(LocalDateTime localDateTime) {
         return localDateTime.format(Dictionary.FILE_DATE_FORMATTER);
+    }
+
+    /**
+     * Check file size
+     * @param length content length
+     * @param size size
+     * @return boolean
+     */
+    private boolean isFileSizeAvailable(double length, double size) {
+        return length < size;
+    }
+
+    /**
+     * Check folder size
+     * @param path Path of Folder
+     * @param size size of Folder
+     * @return boolean
+     */
+    private boolean isFolderSizeAvailable(Path path, double size) {
+        double length = getFolderSize(path);
+        return isFileSizeAvailable(length, size);
+    }
+
+    /**
+     * Get size of the given path or directory
+     * @param path Path of Folder
+     * @return size of the folder
+     */
+    private double getFolderSize(Path path){
+        double length = 0;
+        File[] files = path.toFile().listFiles();
+        if(null == files || files.length == 0){
+            return 0;
+        }
+        for (File file : files) {
+            if (file.isFile()) {
+                length += getFileSize(file);
+            }
+        }
+        return length;
     }
 
 }

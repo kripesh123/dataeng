@@ -10,11 +10,13 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 	// write your code here
-        int fileSize = 2;
-        String fileMetadata = "locations,64,sensors,138,devices,24";
+        double fileSize = Dictionary.FILE_SIZE;
+        String generationFileMetadata = Dictionary.GENERATE_DATA_SET ;
+        String updateFileMetadata = Dictionary.UPDATE_DATA_SET;
         MasterDataSetFactory masterDatasetFactory = new MasterDataSetFactory();
-        MasterDataSet masterDataset = masterDatasetFactory.getOperation(Dictionary.DATA_GENERATION);
-        masterDataset.dataGenerator(Dictionary.FILE_LOCATION, fileSize, fileMetadata);
-
+        MasterDataSet masterDataSet = masterDatasetFactory.getOperation(Dictionary.DATA_GENERATION);
+        masterDataSet.dataGenerator(Dictionary.FILE_LOCATION, fileSize, generationFileMetadata);
+        MasterDataSet updateMasterDataSet = masterDatasetFactory.getOperation(Dictionary.DATA_UPDATE);
+        updateMasterDataSet.dataGenerator(Dictionary.FILE_LOCATION, 0, updateFileMetadata);
     }
 }
